@@ -1,25 +1,122 @@
 ---
 title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+author: "ryaxley"
+date: "February 28, 2016"
+output: html_document
+keep_md: true
 ---
 
 
 ## Loading and preprocessing the data
+```{r}
+setwd("~/Reproducible.Research/code/Project.1/RepData_PeerAssessment1/")
+df <- read.csv(unz("activity.zip", "activity.csv"), header=T, sep=",")
 
+# Convert date variable to date format
+df$date <- as.Date(df$date, format="%Y-%m-%d")
+
+# Convert interval variable to factor
+df$interval <- as.factor(df$interval)
+```
 
 
 ## What is mean total number of steps taken per day?
+```{r}
+# Aggregate steps by day
+daily <- aggregate(steps ~ date, df, sum)
 
+# Total steps by day (sorted)
+sort(daily$steps, decreasing = TRUE)
+
+# Histogram of daily steps
+hist(daily$steps, breaks = 5)
+
+# Mean steps per day
+mean(daily$steps)
+
+# Median steps per day
+median(daily$steps)
+```
 
 
 ## What is the average daily activity pattern?
+```{r}
+# Exploratory plot of avg steps across days
+plot(daily$date, daily$steps, type="l", col='red', 
+     xlab="Date", ylab="Total steps taken each day")
+abline(h=mean(daily$steps), lwd=1, lty=2 )
 
+# Mean steps by 5 minute intervals
+interval <- aggregate(steps ~ interval, df, mean)
+plot(interval$steps, type="l", 
+     xlab="5 minute intervals during the day", ylab="Average steps")
 
+# Maximum number of steps per 5-m interval across days
+max(interval$steps)
+abline(v=which.max(interval$steps), col="red", lty=2)
+text(200,170, paste("Maximum average steps =", round(max(interval$steps))))
+```
 
 ## Imputing missing values
+With the MICE package we imputed missing values. The overall pattern remains very similar to the original data. 
+```{r}
+# Number of missing values
+length(subset(df, is.na(steps))$steps)
 
+# Impute library: Multivariate Imputation by Chained Equations  
+library(mice)
+df2 <- df
+# Date variable needs to be converted for MICE to run
+df2$date <- as.character(df2$date)
+# Impute data
+temp <- mice(df2, m=5, maxit=10, meth='pmm', seed=500)
+df2 <- complete(temp, include=TRUE)
+
+# Aggregate steps by day
+daily2 <- aggregate(steps ~ date, df2, sum)
+
+# Histogram of daily steps
+hist(daily2$steps, breaks = 5)
+
+# Mean steps per day
+mean(daily2$steps)
+
+# Median steps per day
+median(daily2$steps)
+
+# Mean steps by 5 minute intervals
+interval2 <- aggregate(steps ~ interval, df2, mean)
+plot(interval2$steps, type="l", 
+     xlab="5 minute intervals during the day", ylab="Average steps")
+
+# Maximum number of steps per 5-m interval across days
+max(interval2$steps)
+abline(v=which.max(interval2$steps), col="red", lty=2)
+text(200,170, paste("Maximum steps =", round(max(interval2$steps))))
+```
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+Segregating the data by day of the week we can see a larger number of steps distributed throughout the entire day compared to the weekdays.
+```{r}
+
+# Create a new factor variable for day of the week
+df2$day <- NA
+df2$date <- as.Date(df2$date)
+df2$day <- weekdays(df2$date)
+df2[df2$day == 'Monday', ]$day <- 'weekday'
+df2[df2$day == 'Tuesday', ]$day <- 'weekday'
+df2[df2$day == 'Wednesday', ]$day <- 'weekday'
+df2[df2$day == 'Thursday', ]$day <- 'weekday'
+df2[df2$day == 'Friday', ]$day <- 'weekday'
+df2[df2$day == 'Saturday', ]$day <- 'weekend'
+df2[df2$day == 'Sunday', ]$day <- 'weekend'
+
+df2 <- aggregate(steps ~ day+interval, df2, mean)
+
+library(lattice)
+
+xyplot(steps~interval|factor(day), data=df2,
+       type='l', layout=c(1,2),
+       xlab='Interval', ylab='Number of Steps')
+```
