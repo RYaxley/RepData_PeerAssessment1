@@ -17,7 +17,7 @@ df <- read.csv(unz("activity.zip", "activity.csv"), header=T, sep=",")
 # Convert date variable to date format
 df$date <- as.Date(df$date, format="%Y-%m-%d")
 
-# Convert interval variable to factor
+# Convert interval variable to factor format
 df$interval <- as.factor(df$interval)
 ```
 
