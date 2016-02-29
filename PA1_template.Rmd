@@ -119,4 +119,6 @@ library(lattice)
 xyplot(steps~interval|factor(day), data=df2,
        type='l', layout=c(1,2),
        xlab='Interval', ylab='Number of Steps')
+
+
 ```
